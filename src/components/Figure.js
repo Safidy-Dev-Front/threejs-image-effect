@@ -3,32 +3,6 @@ import React, { createRef } from 'react';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import glsl from 'glslify';
-const vertexShader = `
-    varying vec2 v_uv;
-
-    void main() {
-        v_uv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-`;
-
-// Fragment Shader avec bruit procédural
-const fragmentShader = `
-    varying vec2 v_uv;
-
-    // Fonction pour générer un bruit pseudo-aléatoire basé sur une valeur
-    float random(vec2 p) {
-        return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-    }
-
-    void main() {
-        // Utilisation de la position UV pour générer un bruit
-        float noiseValue = random(v_uv * 10.0); // Multiplier pour augmenter la fréquence du bruit
-
-        // Affichage du bruit sur toute la scène
-        gl_FragColor = vec4(vec3(noiseValue), 1.0); // Application du bruit à la couleur finale
-    }
-`;
 
 class Figure extends React.Component {
     constructor(props) {
@@ -61,7 +35,21 @@ class Figure extends React.Component {
 
         // Charger l'image au survol
         this.hoverImage = this.loader.load(imgElement.dataset.hover);
+        //Definir text 
 
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.heigth = 256;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 60px montserrat sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Hello Shader!', canvas.width / 2, canvas.height / 2);
+
+        const textTexture = new THREE.CanvasTexture(canvas);
         // Définir les uniforms
         this.uniforms = {
             u_image: { type: 't', value: this.image },
@@ -69,7 +57,8 @@ class Figure extends React.Component {
             u_mouse: { value: this.mouse },
             u_time: { value: 0 },
             u_res: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-            u_pixelRatio: { value: window.devicePixelRatio.toFixed(1)  }
+            u_pixelRatio: { value: window.devicePixelRatio.toFixed(1)  },
+            u_text_hello: { value: textTexture },
         }
 
         // Utiliser ShaderMaterial pour appliquer un shader
@@ -97,6 +86,7 @@ class Figure extends React.Component {
             uniform float u_pixelRatio;
             uniform sampler2D u_image;
             uniform sampler2D u_imagehover;
+            uniform sampler2D u_text_hello;
             varying vec2 v_uv;
             
             // --- Simplex Noise (3D) ---
@@ -198,6 +188,7 @@ class Figure extends React.Component {
             void main() {
                 vec4 image = texture(u_image, v_uv);
                 vec4 hover = texture(u_imagehover, v_uv);
+                vec4 text_hello = texture(u_text_hello , v_uv);
 
                 vec2 res = u_res * u_pixelRatio;
                 vec2 st = gl_FragCoord.xy / res.xy - vec2(0.5);
@@ -208,16 +199,18 @@ class Figure extends React.Component {
                 mouse *= -1.0;
             
                 float offx = v_uv.x + sin(v_uv.y + u_time * .1);
-                float offy = v_uv.y - u_time * 0.1 - cos(u_time * 0.001) * .01;
+                float offy = v_uv.y - u_time * 0.1 - cos(u_time * 0.001) * .1;
             
                 vec2 circlePos = st + mouse;
-                float c = circle(circlePos, 0.1, 0.2) * 1.5;
+                float c = circle(circlePos, 0.05, 0.2) * 1.5;
             
-                float n = snoise(vec3(offx, offy, u_time * .1) * 4.0) - 1.0;
-                float finalMask = smoothstep(0.4, 0.5, n + pow(c, 2.));
+                float n = snoise(vec3(offx, offy, u_time * .1) * 5.0) - 1.0;
 
-                vec4 finalImage = mix(image, hover, finalMask);
-                gl_FragColor = finalImage;
+                float mask = smoothstep(0.4, 0.5, n + pow(c, 1.5));
+
+                vec4 finalImage = mix(image, hover, mask);
+                vec4 result = mix(finalImage , text_hello , (hover * mask) * 1.0);
+                gl_FragColor = result;
             }`,
             defines: {
                  PR: window.devicePixelRatio.toFixed(1)
