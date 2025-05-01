@@ -1,7 +1,18 @@
+@font-face {
+    font-family: 'Boldonse';
+    src: url('@/app/fonts/Boldonse-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+h1{
+}
 body{
+	font-family: 'Boldonse';
     margin: 0;
     padding: 0;
-	background-color: rgb(174, 174, 174);
+	background-color: rgb(255, 255, 255);
 }
 .container {
 	display: flex;
@@ -39,4 +50,28 @@ canvas {
 	width: 100%;
 	height: 100vh;
 	z-index: 9;
+}
+.scrolltriger{
+	width: 100vw;
+	overflow: hidden;
+}
+.backgroud-text{
+	font-size: 8vw;
+	text-transform: uppercase;
+	border-bottom: solid 4px black;
+}
+.backgroud-text .container-fluid{
+	display: flex;
+	flex-wrap: nowrap;
+	text-wrap: nowrap;
+}
+.block-content-scroll .content-flex{
+	display: flex;
+}
+.block-content-scroll .content-flex > div{
+	width: 50%;
+	padding: 50px;
+}
+.block-content-scroll  .content-text{ 
+	border-right: solid 4px black;
 }
